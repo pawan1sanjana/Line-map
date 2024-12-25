@@ -161,6 +161,8 @@
             .then(data => {
                 customers = data;
 
+                console.log('Fetched customers:', customers); // Debugging
+
                 // Add markers to the map
                 customers.forEach(customer => {
                     L.marker([customer.latitude, customer.longitude]).addTo(map)
@@ -186,8 +188,6 @@
                         .addTo(map)
                         .bindPopup('Your current location');
                 }
-
-                map.setView(userLocation, 15);  // Update map to follow the user
             }, err => {
                 console.error('Error fetching geolocation:', err);
             });
@@ -204,55 +204,48 @@
 
         // Set route based on entered customer IDs
         document.getElementById('set-route').addEventListener('click', () => {
-    const input = document.getElementById('customer-ids').value.trim();
+            const input = document.getElementById('customer-ids').value.trim();
 
-    if (!input) {
-        alert('Please enter at least one customer ID.');
-        return;
-    }
-
-    const ids = input.split(',').map(id => parseInt(id.trim(), 10));
-    if (ids.some(isNaN)) {
-        alert('Customer IDs must be valid numbers.');
-        return;
-    }
-
-    const invalidIds = ids.filter(id => !customers.find(customer => customer.id === id));
-    if (invalidIds.length > 0) {
-        alert(`Invalid customer IDs: ${invalidIds.join(', ')}. Please check and try again.`);
-        return;
-    }
-
-    const selectedCustomers = ids
-        .map(id => customers.find(customer => customer.id === id))
-        .filter(customer => customer);
-
-    if (routingControl) {
-        map.removeControl(routingControl);
-    }
-
-    const waypoints = [
-        userLocation,
-        ...selectedCustomers.map(customer => L.latLng(customer.latitude, customer.longitude))
-    ];
-
-    routingControl = L.Routing.control({
-        waypoints: waypoints,
-        routeWhileDragging: true,
-        createMarker: (i, waypoint) => {
-            if (i === 0) {
-                return L.marker(waypoint.latLng, { title: 'Start' }).bindPopup('Start Location');
-            } else if (i === waypoints.length - 1) {
-                return L.marker(waypoint.latLng, { title: 'End' }).bindPopup('End Location');
-            } else {
-                return L.marker(waypoint.latLng, { title: 'Waypoint' }).bindPopup('Waypoint');
+            if (!input) {
+                alert('Please enter at least one customer ID.');
+                return;
             }
-        }
-    }).addTo(map);
-});
 
-      
- 
+            const ids = input.split(',').map(id => parseInt(id.trim(), 10));
+            if (ids.some(isNaN)) {
+                alert('Customer IDs must be valid numbers.');
+                return;
+            }
+
+            const invalidIds = ids.filter(id => !customers.find(customer => customer.id === id));
+            if (invalidIds.length > 0) {
+                alert(`Invalid customer IDs: ${invalidIds.join(', ')}. Please check and try again.`);
+                return;
+            }
+
+            const selectedCustomers = ids
+                .map(id => customers.find(customer => customer.id === id))
+                .filter(customer => customer);
+
+            if (!userLocation) {
+                alert('User location not available yet. Please wait and try again.');
+                return;
+            }
+
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+
+            const waypoints = [
+                userLocation,
+                ...selectedCustomers.map(customer => L.latLng(customer.latitude, customer.longitude))
+            ];
+
+            routingControl = L.Routing.control({
+                waypoints: waypoints,
+                routeWhileDragging: true
+            }).addTo(map);
+        });
 
         // Navigation button click
         document.getElementById('navigate').addEventListener('click', () => {
