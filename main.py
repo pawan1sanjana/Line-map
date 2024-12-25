@@ -1,6 +1,8 @@
 from flask import Flask, render_template, jsonify, request
+import os
 
-app = Flask(__name__)
+# Initialize Flask app with the template folder set to the current directory
+app = Flask(__name__, template_folder=os.path.dirname(os.path.abspath(__file__)))
 
 # In-memory storage for customer locations
 customers = [
@@ -35,3 +37,6 @@ def manage_customers():
                 customer.update(updated_customer)
                 return jsonify({"message": "Customer updated successfully"}), 200
         return jsonify({"message": "Customer not found"}), 404
+
+if __name__ == "__main__":
+    app.run(debug=True)
