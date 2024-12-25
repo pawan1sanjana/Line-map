@@ -35,6 +35,3 @@ def manage_customers():
                 customer.update(updated_customer)
                 return jsonify({"message": "Customer updated successfully"}), 200
         return jsonify({"message": "Customer not found"}), 404
-
-if __name__ == "__main__":
-    app.run(debug=True)
