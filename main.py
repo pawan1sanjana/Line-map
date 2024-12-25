@@ -1,8 +1,8 @@
 from flask import Flask, render_template, jsonify, request
 import os
 
-# Initialize Flask app with the template folder set to the current directory
-app = Flask(__name__, template_folder=os.path.dirname(os.path.abspath(__file__)))
+# Initialize Flask app
+app = Flask(__name__)
 
 # In-memory storage for customer locations
 customers = [
@@ -17,6 +17,7 @@ def index():
 
 @app.route("/edit")
 def edit():
+    # Ensure the `edit.html` file exists in your `templates` folder
     return render_template("edit.html")
 
 @app.route("/api/customers", methods=["GET", "POST", "PUT"])
@@ -26,9 +27,10 @@ def manage_customers():
 
     if request.method == "POST":
         new_customer = request.json
-        new_customer["id"] = max(customer["id"] for customer in customers) + 1
+        new_customer_id = max((customer["id"] for customer in customers), default=0) + 1
+        new_customer["id"] = new_customer_id
         customers.append(new_customer)
-        return jsonify({"message": "Customer added successfully"}), 201
+        return jsonify({"message": "Customer added successfully", "id": new_customer_id}), 201
 
     if request.method == "PUT":
         updated_customer = request.json
