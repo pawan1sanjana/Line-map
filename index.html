@@ -166,129 +166,134 @@
         <p id="duration">Duration: N/A</p>
     </div>
     <script>
-        const map = L.map('map').setView([6.9271, 79.8612], 8);
-        let currentLocationMarker = null;
-        let routingControl = null;
-        let userLocation = null;
+        // Insert the provided JavaScript code here.
+      
+    const map = L.map('map').setView([6.9271, 79.8612], 8);
+    let currentLocationMarker = null;
+    let routingControl = null;
+    let userLocation = null;
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-        }).addTo(map);
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+    }).addTo(map);
 
-        // Marker cluster group
-        const markers = L.markerClusterGroup();
-        map.addLayer(markers);
+    // Marker cluster group
+    const markers = L.markerClusterGroup();
+    map.addLayer(markers);
 
-        // Store customer data for quick lookup
-        let customers = [];
+    // Store customer data for quick lookup
+    let customers = [];
 
-        // Fetch customer data
-        fetch('/api/customers')
-            .then(response => response.json())
-            .then(data => {
-                customers = data;
-                customers.forEach(customer => {
-                    const marker = L.marker([customer.latitude, customer.longitude])
-                        .bindPopup(`<b>${customer.name}</b><br>Lat: ${customer.latitude}, Lon: ${customer.longitude}`);
-                    markers.addLayer(marker);
-                });
-            })
-            .catch(err => console.error('Error fetching customer data:', err));
-
-        // Track real-time location
-        function updateCurrentLocation() {
-            if (!navigator.geolocation) {
-                alert('Geolocation is not supported by your browser');
-                return;
-            }
-
-            navigator.geolocation.watchPosition(position => {
-                userLocation = [position.coords.latitude, position.coords.longitude];
-
-                if (currentLocationMarker) {
-                    currentLocationMarker.setLatLng(userLocation);
-                } else {
-                    currentLocationMarker = L.marker(userLocation, { title: 'Your Location' })
-                        .addTo(map)
-                        .bindPopup('Your current location');
-                }
-            }, err => {
-                console.error('Error fetching geolocation:', err);
+    // Fetch customer data
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(data => {
+            customers = data;
+            customers.forEach(customer => {
+                const marker = L.marker([customer.latitude, customer.longitude])
+                    .bindPopup(`<b>ID:</b> ${customer.id}<br><b>Name:</b> ${customer.name}<br>Lat: ${customer.latitude}, Lon: ${customer.longitude}`);
+                markers.addLayer(marker);
             });
+        })
+        .catch(err => console.error('Error fetching customer data:', err));
+
+    // Track real-time location
+    function updateCurrentLocation() {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
         }
 
-        // Re-center map to current location
-        document.getElementById('recenter').addEventListener('click', () => {
+        navigator.geolocation.watchPosition(position => {
+            userLocation = [position.coords.latitude, position.coords.longitude];
+
             if (currentLocationMarker) {
-                map.setView(currentLocationMarker.getLatLng(), 15);
+                currentLocationMarker.setLatLng(userLocation);
             } else {
-                alert('Current location not available yet.');
+                currentLocationMarker = L.marker(userLocation, { title: 'Your Location' })
+                    .addTo(map)
+                    .bindPopup('Your current location');
             }
+        }, err => {
+            console.error('Error fetching geolocation:', err);
         });
+    }
 
-        // Set route based on entered customer IDs
-        document.getElementById('set-route').addEventListener('click', () => {
-            const input = document.getElementById('customer-ids').value.trim();
+    // Re-center map to current location
+    document.getElementById('recenter').addEventListener('click', () => {
+        if (currentLocationMarker) {
+            map.setView(currentLocationMarker.getLatLng(), 15);
+        } else {
+            alert('Current location not available yet.');
+        }
+    });
 
-            if (!input) {
-                alert('Please enter at least one customer ID.');
-                return;
-            }
+    // Set route based on entered customer IDs
+    document.getElementById('set-route').addEventListener('click', () => {
+        const input = document.getElementById('customer-ids').value.trim();
 
-            const ids = input.split(',').map(id => parseInt(id.trim(), 10));
-            if (ids.some(isNaN)) {
-                alert('Customer IDs must be valid numbers.');
-                return;
-            }
+        if (!input) {
+            alert('Please enter at least one customer ID.');
+            return;
+        }
 
-            const invalidIds = ids.filter(id => !customers.find(customer => customer.id === id));
-            if (invalidIds.length > 0) {
-                alert(`Invalid customer IDs: ${invalidIds.join(', ')}. Please check and try again.`);
-                return;
-            }
+        const ids = input.split(',').map(id => parseInt(id.trim(), 10));
+        if (ids.some(isNaN)) {
+            alert('Customer IDs must be valid numbers.');
+            return;
+        }
 
-            const selectedCustomers = ids
-                .map(id => customers.find(customer => customer.id === id))
-                .filter(customer => customer);
+        const invalidIds = ids.filter(id => !customers.find(customer => customer.id === id));
+        if (invalidIds.length > 0) {
+            alert(`Invalid customer IDs: ${invalidIds.join(', ')}. Please check and try again.`);
+            return;
+        }
 
-            if (!userLocation) {
-                alert('User location not available yet. Please wait and try again.');
-                return;
-            }
+        const selectedCustomers = ids
+            .map(id => customers.find(customer => customer.id === id))
+            .filter(customer => customer);
 
-            if (routingControl) {
-                map.removeControl(routingControl);
-            }
+        if (!userLocation) {
+            alert('User location not available yet. Please wait and try again.');
+            return;
+        }
 
-            const waypoints = [
-                userLocation,
-                ...selectedCustomers.map(customer => L.latLng(customer.latitude, customer.longitude))
-            ];
+        if (routingControl) {
+            map.removeControl(routingControl);
+        }
 
-            routingControl = L.Routing.control({
-                waypoints: waypoints,
-                routeWhileDragging: true,
-                showAlternatives: true
-            }).addTo(map);
+        const waypoints = [
+            userLocation,
+            ...selectedCustomers.map(customer => L.latLng(customer.latitude, customer.longitude))
+        ];
 
-            routingControl.on('routesfound', function(e) {
-                const route = e.routes[0];
-                document.getElementById('distance').innerText = `Distance: ${route.summary.totalDistance / 1000} km`;
-                document.getElementById('duration').innerText = `Duration: ${Math.ceil(route.summary.totalTime / 60)} mins`;
-            });
+        routingControl = L.Routing.control({
+            waypoints: waypoints,
+            routeWhileDragging: true,
+            showAlternatives: true
+        }).addTo(map);
+
+        routingControl.on('routesfound', function(e) {
+            const route = e.routes[0];
+            document.getElementById('distance').innerText = `Distance: ${(route.summary.totalDistance / 1000).toFixed(2)} km`;
+            document.getElementById('duration').innerText = `Duration: ${Math.ceil(route.summary.totalTime / 60)} mins`;
+
+            const customerNames = selectedCustomers.map(customer => customer.name).join(', ');
+            alert(`Route set for customers: ${customerNames}`);
         });
+    });
 
-        // Navigation button click
-        document.getElementById('navigate').addEventListener('click', () => {
-            if (!routingControl) {
-                alert('Set a route first!');
-            } else {
-                alert('Navigation started!');
-            }
-        });
+    // Navigation button click
+    document.getElementById('navigate').addEventListener('click', () => {
+        if (!routingControl) {
+            alert('Set a route first!');
+        } else {
+            alert('Navigation started!');
+        }
+    });
 
-        updateCurrentLocation();
+    updateCurrentLocation();
     </script>
 </body>
 </html>
