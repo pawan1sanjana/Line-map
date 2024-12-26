@@ -13,10 +13,139 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <style>
-        /* Same styles as provided */
-        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        #map { height: 100vh; width: 100vw; }
-        .floating-input, .floating-button, #navigate, #recenter, #info-box { z-index: 1000; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .floating-input {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .floating-input input {
+            flex: 1;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .floating-input button {
+            padding: 10px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .floating-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .floating-button i {
+            font-size: 24px;
+            color: #4285F4;
+        }
+
+        .floating-button:hover {
+            background-color: #f1f1f1;
+        }
+
+        #navigate {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background-color: #34A853;
+            color: white;
+            border-radius: 50%;
+            border: none;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        #navigate i {
+            font-size: 28px;
+            color: white;
+        }
+
+        #navigate:hover {
+            background-color: #2b8e3c;
+        }
+
+        #recenter {
+            position: fixed;
+            bottom: 160px;
+            right: 20px;
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        #recenter i {
+            font-size: 24px;
+            color: #4285F4;
+        }
+
+        #recenter:hover {
+            background-color: #f1f1f1;
+        }
+
+        #info-box {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        #info-box p {
+            margin: 0;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -43,14 +172,16 @@
         let userLocation = null;
 
         // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
 
-        // Marker cluster group
         const markers = L.markerClusterGroup();
         map.addLayer(markers);
 
-        // Fetch customer data
         let customers = [];
+
+        // Fetch customer data
         fetch('/api/customers')
             .then(response => response.json())
             .then(data => {
@@ -63,7 +194,7 @@
             })
             .catch(err => console.error('Error fetching customer data:', err));
 
-        // Real-time location tracking
+        // Track real-time location
         function updateCurrentLocation() {
             if (!navigator.geolocation) {
                 alert('Geolocation is not supported by your browser');
@@ -72,7 +203,6 @@
 
             navigator.geolocation.watchPosition(position => {
                 userLocation = [position.coords.latitude, position.coords.longitude];
-
                 if (currentLocationMarker) {
                     currentLocationMarker.setLatLng(userLocation);
                 } else {
@@ -80,16 +210,12 @@
                         .addTo(map)
                         .bindPopup('Your current location');
                 }
-
-                if (!map.getBounds().contains(userLocation)) {
-                    map.setView(userLocation, 15);
-                }
             }, err => {
                 console.error('Error fetching geolocation:', err);
             });
         }
 
-        // Re-center map to current location
+        // Re-center map
         document.getElementById('recenter').addEventListener('click', () => {
             if (currentLocationMarker) {
                 map.setView(currentLocationMarker.getLatLng(), 15);
@@ -98,22 +224,28 @@
             }
         });
 
-        // Set route for customer locations
+        // Set route
         document.getElementById('set-route').addEventListener('click', () => {
             const input = document.getElementById('customer-ids').value.trim();
+
             if (!input) {
                 alert('Please enter at least one customer ID.');
                 return;
             }
 
             const ids = input.split(',').map(id => parseInt(id.trim(), 10));
-            const invalidIds = ids.filter(id => !customers.some(c => c.id === id));
+            if (ids.some(isNaN)) {
+                alert('Customer IDs must be valid numbers.');
+                return;
+            }
+
+            const invalidIds = ids.filter(id => !customers.some(customer => customer.id === id));
             if (invalidIds.length > 0) {
                 alert(`Invalid customer IDs: ${invalidIds.join(', ')}.`);
                 return;
             }
 
-            const selectedCustomers = ids.map(id => customers.find(c => c.id === id));
+            const selectedCustomers = ids.map(id => customers.find(customer => customer.id === id));
 
             if (!userLocation) {
                 alert('User location not available yet. Please wait and try again.');
@@ -125,14 +257,14 @@
             }
 
             const waypoints = [
-                L.latLng(userLocation),
-                ...selectedCustomers.map(c => L.latLng(c.latitude, c.longitude))
+                userLocation,
+                ...selectedCustomers.map(customer => L.latLng(customer.latitude, customer.longitude))
             ];
 
             routingControl = L.Routing.control({
                 waypoints: waypoints,
                 routeWhileDragging: true,
-                showAlternatives: false,
+                showAlternatives: false
             }).addTo(map);
 
             routingControl.on('routesfound', e => {
@@ -142,7 +274,15 @@
             });
         });
 
-        // Start real-time location tracking
+        // Navigation button click
+        document.getElementById('navigate').addEventListener('click', () => {
+            if (!routingControl) {
+                alert('Set a route first!');
+            } else {
+                alert('Navigation started!');
+            }
+        });
+
         updateCurrentLocation();
     </script>
 </body>
